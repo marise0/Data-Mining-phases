@@ -1,13 +1,14 @@
 ---
-title: "Project 2"
-author: "Marise & George"
-date: "2023-12-07"
 output:
   word_document: default
   pdf_document: default
 
 ---
 This is the same dataset as phase2 
+```{r setup, include=FALSE}
+library(here)
+source(here("config.R"))
+```
 
 ```{r}
 library(tidyverse)
@@ -16,12 +17,19 @@ library(ggplot2)
 library(dendextend)
 library(FactoMineR)
 library(ggcorrplot)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(caTools)
+library(pROC)
+library(randomForest)
+library(xgboost)
 ```
 
 
 ```{r}
-setwd("C:/Users/Admin/OneDrive - Lebanese American University/Documents/DataMining")
-df <- read_csv("data-ori.csv")
+df <- read_csv(data2)
 df$SOURCE <- as.factor(df$SOURCE)
 df$SEX <- as.factor(df$SEX)
 dim(df)
@@ -378,15 +386,7 @@ biplot(results)
 
 
 ```{r}
-library(caret)
-library(rpart)
-library(rpart.plot)
-library(FSelector)
-library(caret)
-library(caTools)
-library(pROC)
-library(randomForest)
-library(xgboost)
+
 ```
 
 
