@@ -1,10 +1,6 @@
 ---
-title: "Project 2"
-author: "Marise & George"
-date: "2023-11-16"
 output:
   word_document: default
-  pdf_document: default
 ---
 
 About Dataset (copy pasted)
@@ -28,6 +24,11 @@ SOURCE/Nominal/ {in,out}/The class target in.= in care patient, out = out care p
 First, all the libraries used were defined, and then we read the CSV file after setting the 
 working directory
 
+```{r setup, include=FALSE}
+library(here)
+source(here("config.R"))
+```
+
 ```{r}
 library(tidyverse)
 library(ggplot2)
@@ -36,8 +37,7 @@ library(leaps)
 library(caret)
 library(MASS)
 library("pROC")
-setwd("C:/Users/Admin/OneDrive - Lebanese American University/Documents/DataMining")
-df <- read_csv("data-ori.csv")
+df <- read_csv(data2)
 ```
 
 No Na values are present in the file since the dim function gave the same output before and after calling the drop_na function.
