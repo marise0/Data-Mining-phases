@@ -1,12 +1,4 @@
----
-title: "Project1"
-author: "Marise & Georges"
-output:
-  word_document:
-    toc: yes
----
-
-## **About Dataset**
+## **About Dataset (copy pasted from Kaggle)**
 
 Dataset contains under given important parameters which are considered mainly during application for Masters Programs.
 
@@ -33,14 +25,19 @@ Sports Involvement ( either 0 or 1 )
 # Data Preprocessing
 
 First, all the libraries used were defined, and then we read the CSV file after setting the working directory.
+```{r setup, include=FALSE}
+library(here)
+source(here("config.R"))
+```
 
 ```{r}
 library(tidyverse)
 library(ggplot2)
 library(reshape2)
-setwd("C:/Users/Admin/OneDrive - Lebanese American University/Documents/DataMining")
-df <- read_csv("Grad_Pred.csv")
+library(here)
+df <- read_csv(data1)
 ```
+
 
 No Na values are present in the file since the dim function gave the same output The aim of removing rows with missing values is to ensure our data is complete, avoid errors and improve the quality of our data
 
@@ -354,3 +351,8 @@ cleaned_df <- df[-outlier_indices, ]
 Outliers usually do not have a big impact on the least square line but removing them cause a lower RSE and an increase in R\^2, i.e we get a different interpretation of the fit. This is the case here after removing the outliers RSE decreased from 0.04692 to 0.0451 and R\^2 increased from 0.8958 to 0.8998. We conclude that our model became better after removing the outliers.
 
 # Further Hypothesis
+There is a relationship between the strength of Statement of Purpose (SOP) and the Chance of Admit, but only in higher rated universities.
+
+Students who do not have a remarkable CGPA are more likely to gain admission to higherrated universities if they actively participate in sports and engage in research activities.
+
+Enrollment in a sport will impact a student's cumulative CGPA, as they may need to allocate time for practice, potentially affecting their academic performance.
