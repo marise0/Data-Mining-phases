@@ -1,0 +1,629 @@
+---
+title: "Project 2"
+author: "Marise & George"
+date: "2023-12-07"
+output:
+  word_document: default
+  pdf_document: default
+
+---
+This is the same dataset as phase2 
+
+```{r}
+library(tidyverse)
+library(factoextra)
+library(ggplot2)
+library(dendextend)
+library(FactoMineR)
+library(ggcorrplot)
+```
+
+
+```{r}
+setwd("C:/Users/Admin/OneDrive - Lebanese American University/Documents/DataMining")
+df <- read_csv("data-ori.csv")
+df$SOURCE <- as.factor(df$SOURCE)
+df$SEX <- as.factor(df$SEX)
+dim(df)
+str(df)
+```
+
+
+Removing outliers:
+it is very important to remove outliers before performing PCA and especially clustering.
+Outliers can affect the direction of the principal component loading vectors.
+In addition, k-means and hierarchical clustering force every observation into a cluster hence, the
+clusters found may be heavily distorted due to the presence of outliers that do not belong to any cluster.
+
+```{r cars}
+boxplot(df$HAEMATOCRIT)
+outliers <- boxplot(df$HAEMATOCRIT, plot=FALSE)$out
+df<- df[-which(df$HAEMATOCRIT %in% outliers),]
+boxplot(df$HAEMATOCRIT)
+
+```
+
+
+```{r}
+boxplot(df$HAEMOGLOBINS)
+outliers1 <- boxplot(df$HAEMOGLOBINS, plot=FALSE)$out
+df<- df[-which(df$HAEMOGLOBINS %in% outliers1),]
+boxplot(df$HAEMOGLOBINS)
+```
+
+```{r}
+boxplot(df$ERYTHROCYTE)
+outliers2 <- boxplot(df$ERYTHROCYTE, plot=FALSE)$out
+df<- df[-which(df$ERYTHROCYTE %in% outliers2),]
+boxplot(df$ERYTHROCYTE)
+```
+
+
+```{r}
+boxplot(df$LEUCOCYTE)
+outliers3 <- boxplot(df$LEUCOCYTE, plot=FALSE)$out
+df<- df[-which(df$LEUCOCYTE %in% outliers3),]
+boxplot(df$LEUCOCYTE)
+```
+
+
+```{r}
+boxplot(df$THROMBOCYTE)
+outliers4 <- boxplot(df$THROMBOCYTE, plot=FALSE)$out
+df<- df[-which(df$THROMBOCYTE %in% outliers4),]
+boxplot(df$THROMBOCYTE)
+```
+
+
+```{r}
+boxplot(df$MCH)
+outliers5 <- boxplot(df$MCH, plot=FALSE)$out
+df<- df[-which(df$MCH %in% outliers5),]
+boxplot(df$MCH)
+```
+
+
+```{r}
+boxplot(df$MCHC)
+outliers6 <- boxplot(df$MCHC, plot=FALSE)$out
+df<- df[-which(df$MCHC %in% outliers6),]
+boxplot(df$MCHC)
+```
+
+
+```{r}
+boxplot(df$MCV)
+outliers7 <- boxplot(df$MCV, plot=FALSE)$out
+df<- df[-which(df$MCV %in% outliers7),]
+boxplot(df$MCV)
+```
+
+
+The number of rows decreased from 4412 observation to 3694
+we removed 718 observations
+
+```{r}
+dim(df)
+str(df)
+```
+
+The data description lacks unit specification, yet upon observing the boxplot, 
+it's evident that our predictors are measured in diverse units. 
+To ensure compatibility for PCA, k-means, and hierarchical clustering, we standardize our predictors by scaling them.
+```{r}
+boxplot(df)
+```
+
+
+We'll exclude both the response variable and the gender variable from our analysis. 
+The specific variables in our dataset aren't anticipated to be influenced by an individual's gender.
+
+```{r}
+ds <- df
+ds <- ds %>% mutate(SEX=NULL)
+ds <- ds %>% mutate(SOURCE=NULL)
+```
+
+
+```{r}
+ds <-scale(ds,center = TRUE, scale = TRUE)
+ds <- data.frame(ds)
+View(ds)
+```
+
+
+This summary displays the ranges of the scaled variables.
+```{r}
+summary(ds)
+```
+
+There is a significant difference between this boxplot and the previous one.
+```{r}
+boxplot(ds)
+```
+
+
+
+k-means:
+We'll employ the elbow technique to select the optimal number of clusters for our K-means analysis
+We observe that beyond k=3, there's a marginal decrease in the total within Sum of Squares for each k-value.
+Hence we will generate three clusters
+
+This method operates similarly with k-means as it does with PCA.
+```{r}
+fviz_nbclust(ds, kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2) 
+```
+
+we run the starting random assignment 100 times since the K-means algorithm finds a local rather 
+than a global optimum hence, the results obtained will depend on 
+the initial (random) cluster assignment of each observation
+```{r}
+fviz_cluster(kmeans(ds,centers=3,iter.max = 10000,nstart=100),data=ds)
+clusters <- kmeans(ds,centers=3,iter.max = 10000,nstart=100)
+```
+
+we can see the vector of the p feature means for the observations in the three clusters
+```{r}
+clusters$centers
+```
+
+
+we reinclude the SOURCE variable previously removed 
+In clusters one and three, the count of out-care patients exceeds that of in-care patients,
+while in cluster two, the reverse is observed.
+
+However, the response here is not very significant for our data analysis
+```{r}
+ds <- ds %>% mutate(cluster= clusters$cluster)
+ds <- ds %>% mutate(SOURCE= df$SOURCE)
+ggplot(ds, aes(x = as.factor(cluster), fill = as.factor(SOURCE))) +
+  geom_bar(position = "dodge") +
+  labs(x = "Cluster", y = "Count", fill = "Source") +
+  ggtitle("Count of in/out in each Cluster")
+```
+
+Hierarchical clustering:
+```{r}
+ds <- ds %>% mutate(cluster=NULL) %>% mutate(SOURCE=NULL)
+```
+
+we will use the euclidean distance in our work
+```{r}
+dist_mat <- dist(ds, method = 'euclidean')
+```
+
+We build three trees using average link, single link and complete link respectively.
+
+
+average linkage
+```{r}
+hclust_avg <- hclust(dist_mat, method = 'average')
+plot(hclust_avg)
+```
+we can conclude that observation 3171 is very different from any other observation, since it did not fuse with any other leaf or branch, and it is found at the top of the tree
+
+
+
+single linkage
+```{r}
+hclust_single <- hclust(dist_mat, method = 'single')
+plot(hclust_single)
+```
+The result of single linkage are extended, trailing clusters in which single observations are fused one-at-a-time, which is an issue with this method
+
+
+
+complete linkage 
+```{r}
+hclust_comp <- hclust(dist_mat, method = 'complete')
+plot(hclust_comp)
+```
+The dendrogram generated using complete linkage appears to be the most balanced, 
+and we'll proceed with this tree for the subsequent analysis.
+
+
+We can visualize distinct clusters by cutting the tree at various heights.
+k= number of clusters
+k=2
+```{r}
+cut_comp <- cutree(hclust_comp, k = 2)
+plot(hclust_comp)
+rect.hclust(hclust_comp , k = 2, border = 2:6)
+abline(h = 10.8, col = 'orange')
+```
+
+
+```{r}
+comp_dend_obj <- as.dendrogram(hclust_comp)
+comp_col_dend <- color_branches(comp_dend_obj, h = 10.8)
+plot(comp_col_dend)
+```
+
+k=3
+```{r}
+cut_comp1 <- cutree(hclust_comp, k = 3)
+plot(hclust_comp)
+rect.hclust(hclust_comp , k = 3, border = 2:6)
+abline(h = 9.9, col = 'blue')
+```
+
+
+```{r}
+comp_dend_obj <- as.dendrogram(hclust_comp)
+comp_col_dend <- color_branches(comp_dend_obj, h = 9.9)
+plot(comp_col_dend)
+```
+
+k=4
+```{r}
+cut_comp2 <- cutree(hclust_comp, k = 4)
+plot(hclust_comp)
+rect.hclust(hclust_comp , k = 4, border = 2:6)
+abline(h = 9.1, col = 'red')
+```
+
+
+```{r}
+comp_dend_obj <- as.dendrogram(hclust_comp)
+comp_col_dend <- color_branches(comp_dend_obj, h = 9.1)
+plot(comp_col_dend)
+```
+
+k=5
+```{r}
+cut_comp3 <- cutree(hclust_comp, k = 5)
+plot(hclust_comp)
+rect.hclust(hclust_comp , k = 5, border = 2:6)
+abline(h = 8.5, col = 'yellow')
+```
+
+```{r}
+comp_dend_obj <- as.dendrogram(hclust_comp)
+comp_col_dend <- color_branches(comp_dend_obj, h = 8.5)
+plot(comp_col_dend)
+```
+Visually, the most sensible segmentation of the dendrogram appears to be cutting it into two clusters at a height of h=10.8. 
+Lower heights result in smaller clusters that don't seem to hold substantial individual significance,
+suggesting that integrating them into larger clusters would make more sense.
+
+Hence using K-means clustering results in three clusters,
+and using hierarchical clustering results in two clusters.
+
+```{r}
+ds <- ds %>% mutate(cluster = cut_comp)
+ds <- ds %>% mutate(SOURCE = df$SOURCE)
+```
+
+
+Since the hierarchical clustering results in two clusters it would make more sense in this case to examine if the majority of in-care patients predominantly belong to one cluster while the out-care patients largely populate the second cluster.
+```{r}
+ggplot(ds, aes(x = as.factor(cluster), fill = as.factor(SOURCE))) +
+  geom_bar(position = "dodge") +
+  labs(x = "Cluster", y = "Count", fill = "Source") +
+  ggtitle("Count of in/out in each Cluster")
+
+```
+In both clusters, the count of out-care patients surpasses that of in-care patients. 
+It appears that these clusters do not distinctly separate the two types of patients.
+
+
+PCA
+```{r}
+ds <- ds %>% mutate(cluster=NULL) %>% mutate(SOURCE=NULL)
+```
+
+Given this correlation matrix, we would anticipate "ERYTHROCYTE," "HAEMOGLOBINS," and "HAEMATOCRIT" 
+to appear close to each other in the biplot and share a similar directional trend.
+as well as "MCV" and "MCH".
+```{r}
+corr_matrix <- cor(ds)
+ggcorrplot(corr_matrix)
+```
+
+we notice that nine principal components have been generated (Comp.1 to Comp.9) along with
+the nine principal component loading vectors,
+which also correspond to the number of variables in the data.
+There are at most min(n − 1, p) principal components.
+```{r}
+data.pca <- princomp(corr_matrix)
+data.pca$loadings[, 1:9]
+```
+
+Each component explains a percentage of the total variance in the data set. 
+In the Cumulative Proportion section, the first principal component explains almost 67% of the total variance.
+The second one explains 21% of the total variance. 
+The cumulative proportion of Comp.1 and Comp.2 explains nearly 88% of the total variance. 
+This means that the first two principal components can accurately represent the data. 
+```{r}
+summary(data.pca)
+```
+
+After PC2 the proportion of variance explained by each subsequent principal component drops off.
+According to the elbow technique we will choose the first two components
+```{r}
+fviz_eig(data.pca, addlabels = TRUE)
+
+```
+
+The first principal component places most of its wait on all predictors except "MCHC", "LEUCOCYE" and "THROMBOCYE".
+The second principal component places most of its wait on all predictors except "HAEMATOCRIT","HAEMOGLOBINS", "ERYTHROCYTE", and "AGE".
+```{r}
+data.pca$loadings[, 1:2]
+fviz_pca_var(data.pca, col.var = "black")
+```
+The conclusions made after visualizing the correlation matrix are now seen in this biplot.
+
+
+This plot determine how much each variable is represented in the first two components.
+```{r}
+fviz_cos2(data.pca, choice = "var", axes = 1:2)
+```
+"ERYTHROCYTE" is contributing the most to PC1 and PC2, followed by "HAEMATOCRIT" and "HAEMOGLOBINS".
+"LEUCOCYTE"," THROMBOCYTE" and "MCHC"  are not perfectly represented by these components.
+
+
+The last two visualization approaches: biplot and attributes importance can be combined to create a single biplot
+```{r}
+fviz_pca_var(data.pca, col.var = "cos2",
+             gradient.cols = c("black", "red", "purple"),
+             repel = TRUE)
+```
+
+We are not interested in plotting the observations, since the plot will not generate any useful information about the observations
+```{r}
+results <- princomp(ds)
+biplot(results)
+```
+
+
+```{r}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(FSelector)
+library(caret)
+library(caTools)
+library(pROC)
+library(randomForest)
+library(xgboost)
+```
+
+
+Classification tree
+First we split our data into training and testing to perform all the necessary decision trees
+```{r}
+set.seed(123)
+sample= sample.split(df$SOURCE, SplitRatio = .70)
+train= subset(df,sample==TRUE)
+test= subset(df,sample==FALSE)
+```
+
+
+
+We train the tree model using the training data and make predictions using the testing dataset.
+```{r}
+tree <- rpart(SOURCE ~., data = train)
+patient.type.predicted <- predict(tree, test, type="class")
+```
+
+
+```{r}
+confusionMatrix(patient.type.predicted, test$SOURCE)
+
+```
+Our classification tree has an accuracy of 0.7437, sensitivity of 0.5647 and specificity of 0.8551
+A reasonably good result for an unpruned tree, and without employing any methods to enhance prediction accuracy.
+One can expect worst results due to overfitting.
+
+
+We present two visualization for our tree, the first is a simple one 
+```{r}
+prp(tree)
+```
+
+
+```{r}
+rpart.plot(tree, type = 5, extra = 101, under = FALSE, cex = 1, box.palette = "auto")
+```
+```{r}
+rules <- rpart.rules(tree)
+print(rules)
+```
+Surprisingly, the model's complexity is lower than anticipated. Out of the ten predictors, the model utilized only three variables.
+
+```{r}
+VI_tree<- data.frame(var = names(df)[-1], imp = varImp(tree))
+VI_plot_tree <- VI_tree[order(VI_tree$Overall, decreasing = FALSE), ]
+barplot(VI_plot_tree$Overall,
+        names.arg = rownames(VI_plot_tree),
+        horiz = TRUE,
+        col = 'red',
+        cex.names = 0.5,
+        las = 1,
+        xlab = 'Variable Importance')
+```
+
+```{r}
+varImp(tree)
+```
+It's notable that MCH, MCV, and MCHC held no significance in constructing our tree. 
+Interestingly, the tree didn't utilize the most important feature, "HAEMATOCRIT". 
+It used the second "ERYTHROCYTE" , the third "THROMBOCYTE" and the fifth "LEUCOCYTE" most important variables
+From the correlation matrix previously generated, a correlation between "ERYTHROCYTE," "HAEMATOCRIT," and "HAEMOGLOBINS" was shown. 
+We suspect that the tree selected "ERYTHROCYTE", due to its lower Gini index among these correlated predictors, then proceeded to use the other two most important variables that weren't part of this correlated set.
+
+
+Pruning the tree
+
+Given the tree's current simplicity, we anticipate that the pruned tree may either remain unchanged or undergo only marginal changes.
+
+We use Cp – Complexity parameter to control the tree growth.
+Any split which does not improve the fit by cp will likely be pruned off to avoid overfitting.
+We want to choose cp that give us the lowest test error
+
+This following function shows the Training error , cross validation error (xerror: the one of interest) and standard deviation at each node of our tree.
+```{r}
+printcp(tree)
+```
+
+cross-validation results
+```{r}
+plotcp(tree)
+```
+
+We get cp with minimun cross validation error
+```{r}
+best_cp <- tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"]
+best_cp
+```
+```{r}
+tree.pruned <- prune(tree, cp = best_cp)
+rpart.plot(tree.pruned, type = 5, extra = 101, under = FALSE, cex = 1, box.palette = "auto")
+```
+As expected the tree do not change, we do not expect overfitting in such a simple tree.
+Removing too many nodes will reduce acuuracy.
+
+
+ROC and area under the curve "0.7099".
+```{r}
+rocdf <- df
+rocdf$SOURCE <- ifelse(rocdf$SOURCE=="in",0,1)
+patient.type.predicted <- ifelse(patient.type.predicted=="in",0,1)
+roc= roc(response=test$SOURCE, predictor= patient.type.predicted)
+auc(roc)
+plot(roc)
+```
+
+For now our classification tree has an accuracy of 0.7437.
+Using bagging, random forest and boosting, we see if we can improve our prediction accuracy.
+
+
+Bagging
+```{r}
+set.seed(123)
+patient_bag <- randomForest(formula=SOURCE~., data=train, mtry=(ncol(train)-1),
+                            importance=T, ntree=100)
+patient_bag
+```
+The  OOB estimate of  error rate is = 0.2421.
+
+```{r}
+patient_bag_pred <- predict(object=patient_bag, newdata=test, type="class")
+table(test$SOURCE, patient_bag_pred)
+```
+```{r}
+acc_bag <- mean(test$SOURCE==patient_bag_pred)
+acc_bag
+```
+The bagging approach generated better accuracy "0.7644404" from the previous tree model "0.7437".
+
+
+```{r}
+VI<- data.frame(var = names(df)[-1], imp = varImp(patient_bag))
+VI_plot_bag <- VI[order(VI$imp.in, decreasing = FALSE), ]
+barplot(VI_plot_bag$imp.in,
+        names.arg = rownames(VI_plot_bag),
+        horiz = TRUE,
+        col = 'blue',
+        cex.names = 0.5,
+        las = 1,
+        xlab = 'Variable Importance')
+```
+```{r}
+varImp(patient_bag)
+```
+The plot depicting variable importance is presenting results that differ from those shown in the previous plot.
+
+
+Random forest
+```{r}
+set.seed(123)
+patient_rf <- randomForest(formula=SOURCE~., data=train, mtry=sqrt(ncol(train)-1),
+                           importance=T, ntree=100)
+patient_rf
+```
+The  OOB estimate of  error rate is =0.2448 very close but bigger than the OOB generated by bagging = 0.2421.
+
+```{r}
+patient_rf_pred <- predict(object=patient_rf, newdata=test, type="class")
+table(test$SOURCE, patient_rf_pred)
+```
+```{r}
+acc_rf <- mean(test$SOURCE==patient_rf_pred)
+acc_rf
+```
+The accuracy of the random forest model is "0.7581227" better than the classification tree model "0.7437", but worse than the bagging approach accuracy "0.7644404".
+
+```{r}
+VI_rf <- data.frame(var = names(df)[-1], imp = varImp(patient_rf))
+VI_plot_rf <- VI_rf[order(VI_rf$imp.in, decreasing = FALSE), ]
+barplot(VI_plot_rf$imp.in,
+        names.arg = rownames(VI_plot_rf),
+        horiz = TRUE,
+        col = 'pink',
+        cex.names = 0.5,
+        las = 1,
+        xlab = 'Variable Importance')
+```
+
+```{r}
+varImp(patient_rf)
+```
+
+Boosting
+We’ll use the caret workflow, which invokes the xgboost package, to automatically adjust the model parameter values, and fit the final best boosted tree that explains the best our data.
+We do this since we can not choose in boosting a random big value for the number of trees, because it will lead to overfitting, unlike in bagging and boosting.
+This method takes approximately two minutes to run.
+```{r}
+set.seed(123)
+model <- train(
+  SOURCE ~., data = train, method = "xgbTree",
+  trControl = trainControl("cv", number = 10)
+)
+```
+
+```{r}
+model$bestTune
+predicted.classes <- model %>% predict(test)
+```
+The number of boosting trees generated is 50, way less than the number of trees we used in the bagging and boosting methods "1000" , with a max depth of 3.
+
+
+```{r}
+mean(predicted.classes == test$SOURCE)
+```
+The boosting technique produced a model with the highest accuracy among all other approaches, achieving a score of "0.7743682".
+
+```{r}
+VI_boost <- as.data.frame(varImp(model)$importance)
+VI_plot_boost <- VI_boost[order(VI_boost$Overall, decreasing = TRUE), ]
+barplot(VI_plot_boost,
+        names.arg = rownames(VI_boost),
+        horiz = TRUE,
+        col = 'purple',
+        cex.names = 0.5,
+        las = 1,
+        xlab = 'Variable Importance')
+```
+
+
+```{r}
+varImp(model)
+```
+
+Variable importance of all used methods in one table
+```{r}
+my_table <- data.frame(
+  "Classification Tree" = c("HAEMATOCRIT", "ERYTHROCYTE", "THROMBOCYTE", "HAEMOGLOBINS", "LEUCOCYTE", "AGE", "SEX", "MCV", "MCHC", "MCH"),
+  "Bagging" = c("THROMBOCYTE", "AGE", "LEUCOCYTE", "HAEMATOCRIT", "ERYTHROCYTE", "MCV", "HAEMOGLOBINS", "MCH", "SEX", "MCHC"),
+  "Random Forest" = c("THROMBOCYTE", "LEUCOCYTE","AGE", "HAEMATOCRIT", "ERYTHROCYTE", "MCV", "HAEMOGLOBINS", "MCH", "SEX", "MCHC"),
+  "Boosting" = c("THROMBOCYTE", "LEUCOCYTE", "ERYTHROCYTE", "AGE", "HAEMATOCRIT", "MCV", "HAEMOGLOBINS", "MCH", "SEX", "MCHC"),
+  row.names = c("1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th")
+)
+print(my_table)
+```
+The categorization of variable importance in bagging, random forest, and boosting is more similar to each other when compared to classification trees.
+The only difference between bagging and random forest is the swapping of variable importance between "AGE" and "LEUCOCYTES."
+The only disparity between random forest and boosting is centered around the variable "ERYTHROCYTE." In random forest, it ranks fifth in importance, whereas in boosting, it holds the third position.
+In the classification tree model, no specific level of variable importance categorization matches the equivalent level seen in other methods.

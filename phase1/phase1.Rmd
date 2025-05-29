@@ -1,0 +1,356 @@
+---
+title: "Project1"
+author: "Marise & Georges"
+output:
+  word_document:
+    toc: yes
+---
+
+## **About Dataset**
+
+Dataset contains under given important parameters which are considered mainly during application for Masters Programs.
+
+Parameters description:
+
+GRE Scores ( out of 340 )
+
+TOEFL Scores ( out of 120 )
+
+University Rating ( out of 5 )
+
+Statement of Purpose -(SOP) Strength ( out of 5 )
+
+Letter of Recommendation-(LOR) Strength ( out of 5 )
+
+Undergraduate GPA-CGPA ( out of 10 )
+
+Research Experience ( either 0 or 1 )
+
+Chance of Admit ( ranging from 0 to 1 )
+
+Sports Involvement ( either 0 or 1 )
+
+# Data Preprocessing
+
+First, all the libraries used were defined, and then we read the CSV file after setting the working directory.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+setwd("C:/Users/Admin/OneDrive - Lebanese American University/Documents/DataMining")
+df <- read_csv("Grad_Pred.csv")
+```
+
+No Na values are present in the file since the dim function gave the same output The aim of removing rows with missing values is to ensure our data is complete, avoid errors and improve the quality of our data
+
+```{r}
+dim(df)
+df <- drop_na(df)
+dim(df)
+```
+
+Here is an overview of the predictors and the response variable "Chance of Admit" we are working with
+
+```{r}
+colnames(df)
+```
+
+All predictors are of numerical type Sort Involvement and Research should me converted to factor
+
+```{r}
+str(df)
+```
+
+To check if the values are withing the range specified in the description of the dataset. We check specifically the Min and Max
+
+```{r}
+summary(df)
+```
+
+We did not detect any duplicates in our dataset. However, if duplicates were present, it is advisable to remove them, as they can introduce correlated error terms, leading to an undeserved sense of confidence in our model in subsequent analyses.
+
+```{r}
+df[duplicated(df), ]
+View(df)
+```
+
+The values are logical we do not have any sentinel or unexpected random values
+
+```{r}
+unique(df$`University Rating`)
+unique(df$SOP)
+unique(df$LOR)
+unique(df$Research)
+unique(df$`Sport Involvement`)
+```
+
+# Data Visualization
+
+The purpose of the plot is to visualize the frequency of individuals who engage in research before applying to a master's program. The result indicates that the frequencies of those who do research and those who don't do not differ remarkably
+
+```{r}
+ggplot(data = df, aes(x = as.factor(Research))) +
+  geom_bar(fill = "blue", color = "black") +
+  labs(title = "Comparison of Research Engagement Before Master's Program Application", x = "research", y = "Frequency")
+```
+
+The purpose of the plot is to visualize the frequency of individuals who participate in a certain sport before applying to a master's program. The result shows that the frequency of those who are involved in the sport is significantly higher compared to those who are not.
+
+```{r}
+ggplot(data = df, aes(x = as.factor(`Sport Involvement`))) +
+  geom_bar(fill = "yellow", color = "black") +
+  labs(x = "Sport Involvement", y = "Frequency")
+```
+
+Most of the universities to which students in this dataset apply for master's programs have a rating of 3.
+
+```{r}
+ggplot(data = df, aes(x = `University Rating`)) +
+  geom_histogram(fill = "cyan", color = "black") +
+  labs(x = "University Ranking", y = "Frequency")
+```
+
+Students with a CGPA between 8.5 and 8.7 are the most likely to apply for a master's program.
+
+```{r}
+ggplot(data = df, aes(x = CGPA)) +
+  geom_density(fill = "blue", color = "black", alpha = 0.4) +
+  scale_x_continuous(breaks = seq(6.8, 10, by = 0.2))
+```
+
+The Correlation matrix will not work if research and sport involvement are categorical We will initially perform the correlation analysis and subsequently convert these predictors into categorical variables. Additionally, the correlation matrix will provide insights into the potential plots we can generate.
+
+The minimum correlation value 0.33 is between research and sport involvement which is still significant We can conclude that the predictors are correlated with each other and each predictor is correlated with the response "chance of getting admit"
+
+```{r}
+cormatrix <- round(cor(df),2)
+melted <- melt(cormatrix)
+ggplot(melted,aes(Var1,Var2,fill=value))+
+  geom_tile()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_text(aes(Var2, Var1, label = value), 
+            color = "white", size = 3)
+```
+
+From the correlation matrix we can hypothesize that a relationship is present between each predictor and the response "Chance of admit".
+
+Convert categorical predictors to factor
+
+```{r}
+df$Research <- as.factor(df$Research)
+df$`Sport Involvement` <- as.factor(df$`Sport Involvement`)
+```
+
+# Simple Linear Models
+
+Next, we will create individual plots for each predictor variable against the response variable for the purpose of univariate visualization. We anticipate significant results based on the previously generated correlation matrix.
+
+GRE Score against Chance of Admit A linear relationship is present in this plot between the two attributes Hence the chance of admission increases with the GRE score
+
+```{r}
+ggplot(data=df)+
+  geom_point(mapping=aes(x=`GRE Score`,y=`Chance of Admit`))+
+  geom_smooth(mapping=aes(x=`GRE Score`,y=`Chance of Admit`))
+(gre <- summary(lm(`Chance of Admit`~`GRE Score`,df)))
+```
+
+TOEFL Score against Chance of Admit A linear relationship is present in this plot between the two attributes Hence the chance of admission increases with the TOEFL score
+
+```{r}
+ggplot(data=df)+
+  geom_point(mapping=aes(x=`TOEFL Score`,y=`Chance of Admit`))+
+  geom_smooth(mapping=aes(x=`TOEFL Score`,y=`Chance of Admit`))
+(toefl<- summary(lm(`Chance of Admit`~`TOEFL Score`,df)))
+```
+
+The two previous plots display a confidence interval around the smooth curve. This interval appears wider at the beginning and end of the plot, which could be interpreted as a higher uncertainty in those regions
+
+University Rating against Chance of Admit Boxplot was chosen because the quantitative variable is discrete
+
+```{r}
+ggplot(data=df)+
+  geom_boxplot(mapping = aes(x=as.factor(`University Rating`),y=`Chance of Admit`,fill=as.factor(`University Rating`)))+
+   xlab("University Rating")
+(rate<- summary(lm(`Chance of Admit`~`University Rating`,df)))
+```
+
+There is a peculiar trend where, in general, higher-rated universities have lower admission rates than lower-rated universities. Shouldn't the trend be reversed, indicating that the higher the university's rating, the lower the chance of getting admitted to that university.
+
+To better comprehend this trend, we calculated the average of the predictors in two cases: first, for universities rated higher than 3, and second, for universities rated below 3
+
+```{r}
+avgHigherRate <- df %>%
+  filter(as.numeric(df$`University Rating`) > 3) %>%
+  summarize(avgTOEFL=mean(`TOEFL Score`),
+            avgGRE=mean(`GRE Score`),
+            avgSOP=mean(SOP),
+            avgLOR=mean(LOR),
+            avgCGPA=mean(CGPA))
+avgLowerRate <- df %>%
+  filter(as.numeric(df$`University Rating`) < 3) %>%
+  summarize(avgTOEFL=mean(`TOEFL Score`),
+            avgGRE=mean(`GRE Score`),
+            avgSOP=mean(SOP),
+            avgLOR=mean(LOR),
+            avgCGPA=mean(CGPA))
+average <- rbind(avgHigherRate,avgLowerRate)
+new_row_names <- c(">3", "<3")
+average<- as.data.frame(average)
+rownames(average) <- new_row_names
+average
+```
+
+Analyzing the averages allows us to gain deeper insights into the prevailing trends. These averages exhibit significant differences especially in SOP and LOR
+
+When comparing the averages of all features for universities rated below 3 to those rated above 3, a consistent pattern emerges. The averages for all features tend to be lower in the universities with lower ratings
+
+In other words, we are not comparing the same students with the same predictor values for their chances of getting admitted to high and low-rated universities. Instead, we are comparing different students with varying features or characteristics.
+
+In general, students applying to master's programs at higher-rated universities tend to have better qualifications than those applying to lower-rated universities. This is why they have a higher chance of getting admitted, even if the university they are applying to is rated higher than those who are applying to universities with lower ratings and have lower qualifying features.
+
+SOP against Chance of Admit The chance of admission increases with the SOP, hence it seems it is a linear trend
+
+```{r}
+ggplot(data = df, aes(x = as.factor(SOP), y = `Chance of Admit`, fill = as.factor(SOP))) +
+  geom_boxplot() +
+  xlab("SOP")
+(sop <- summary(lm(`Chance of Admit`~ SOP,df)))
+```
+
+The average of getting admitted seems higher when the SOP is 1 compared to an SOP of 1.5 Is this really the case. will will present the same graph as a scatter plot instead of a boxplot.
+
+```{r}
+ggplot(data = df, aes(x = SOP, y = `Chance of Admit`)) +
+  geom_point() 
+```
+
+The number of students with an SOP of 1.5 is higher than those with an SOP of 1. Among the five students with an SOP of 1, three have values near 0.6 on the y-axis. In contrast, students with an SOP of 1.5 are more numerous and widely distributed. However, it's evident that the chance of getting admitted for a student with an SOP of 1 does not surpass that of a student with an SOP of 1.5. That why the average of getting admitted seems higher when the SOP is 1 compared to an SOP of 1.5 but it is not the case. The higher the SOP score the higher the chance of Admit, hence it seems we have a linear trend
+
+LOR against Chance of Admit The higher the LOR score the higher the chance of Admit, hence it seems we have a linear trend
+
+```{r}
+ggplot(data = df, aes(x = as.factor(LOR), y = `Chance of Admit`, fill = as.factor(LOR))) +
+  geom_boxplot() 
+(lor <- summary(lm(`Chance of Admit`~LOR,df)))
+
+```
+
+CGPA against Chance of Admit A linear trend is evident; the chance of admission increases with CGPA. However, there is a high level of uncertainty at the beginning of the curve, and a lower one towards the end.
+
+```{r}
+ggplot(data=df)+
+  geom_point(mapping=aes(x=CGPA,y=`Chance of Admit`))+
+  geom_smooth(mapping=aes(x=CGPA,y=`Chance of Admit`))
+(cgpa<- summary(lm(`Chance of Admit`~ CGPA,df)))
+```
+
+Research against Chance of Admit
+
+```{r}
+ggplot(data=df)+
+  geom_boxplot(mapping=aes(x=Research,y=`Chance of Admit`,fill=Research))
+research<- summary(lm(`Chance of Admit`~ Research,df))
+```
+
+Sport involvement against Chance of Admit
+
+```{r}
+ggplot(data=df)+
+  geom_boxplot(mapping=aes(x=`Sport Involvement`,y=`Chance of Admit`,fill=`Sport Involvement`))
+(sport<- summary(lm(`Chance of Admit`~ `Sport Involvement`,df)))
+```
+
+It is worth noting that the previous two boxplots displays a very pronounced relationship between the each predictor "Research" and "Sport Involvement" and the response "Chance of Admit". Hence, "Research" and "Sport Involvement" corresponds to good attributes to include in our model.
+
+Note that in every simple linear regression previously presented the p-value is significant, the RSE is low and the R\^2 is notable and the F- statistic is for from 1. Hence, we can conclude that there is a relationship between each predictor and the response. Our previous hypothesis is present.
+
+# Generating the model
+
+We present a model between sport and research after we assumed that these attributes are good to include in our model. All p-values are significant and the values of R\^2 and RSE are 0.65 and 0.08407 respectively. No evidence till now that these attributes shouldn't belong to our model
+
+```{r}
+(sport_research<- summary(lm(`Chance of Admit`~ `Sport Involvement`+Research,df)))
+```
+
+Clearly, CGPA is a crucial feature to include in our model. Acceptance into a master's program is notably dependent on the CGPA.
+
+```{r}
+(model2 <- summary(lm(`Chance of Admit`~ `Sport Involvement`+Research+CGPA,df)))
+```
+
+We observe significant increase in R\^2 and decrease in RSE These three predictors were evident features to be put in the model
+
+After trying many models containing these three features, and checking for significant interaction terms between them. Considering the R\^2 and the RSE and the p-values for each feature and for the interactions,this model yielded the highest R\^2 with the smallest RSE.
+
+```{r}
+(model3 <- summary(lm(`Chance of Admit`~ `Sport Involvement`+Research*CGPA,df)))
+```
+
+These predictors were chosen based on our initial analysis as clear candidates for inclusion in our model. However, the process of determining which additional features to include is not as evident. We initially started by including all available features and evaluated how the model performed. From there, we used the model's performance as a basis for analysis and made modifications as necessary.
+
+```{r}
+(MLR <-summary(lm(`Chance of Admit`~`Sport Involvement`+`GRE Score`+`TOEFL Score`+`University Rating`+SOP+LOR+`Research`*CGPA,df)))
+```
+
+The p-values of University Rating and SOP are no longer significant, despite their significance in the two simple linear regression models. In simple linear models, we isolate a single predictor, ignoring other factors. However, in multiple linear models, we fix all predictors except the one under investigation. The change in significance can be attributed to the correlations between University Rating and SOP with other predictors. These two predictors were likely getting "credit" for the effect of other predictors on "chance of Admit". It's challenging to specify which predictor(s) precisely, as the correlation matrix indicates that all predictors are correlated.
+
+We will remove these two predictors
+
+```{r}
+(model4 <- summary(lm(`Chance of Admit`~`Sport Involvement`+`GRE Score`+`TOEFL Score`+LOR+`Research`*CGPA,df)))
+```
+
+When comparing models 3 and 4, we observed that the RSE increased from 0.04721 to 0.04727, and the R\^2 decreased from 0.8929 to 0.892. This slight decrease in R\^2 suggests a scenario of overfitting, providing stronger evidence for the removal of these two predictors.
+
+We hypothesize that the chance of admission is higher for students with acceptable grades in both TOEFL and GRE scores compared to students who performed well on one test while performing poorly on the other, hence an interaction between these two scores.
+
+```{r}
+model5 <-lm(`Chance of Admit`~`Sport Involvement`+`GRE Score`*`TOEFL Score`+LOR+`Research`*CGPA,df)
+summary(model5)
+
+```
+
+Comparing model 4 and 5, we observed that the R\^2 increased from 0.892 to 0.8939, and the RSE decreased from 0.04727 to 0.04692. Our hypothesis is valid.
+
+No polynomial regression model provided better results than Model 5, which aligns with our expectations as the predictors demonstrate a linear trend in the simple linear models. We provide a slight example
+
+```{r}
+(model6 <- summary(lm(`Chance of Admit`~ I(LOR^2)+LOR+`Sport Involvement`+`GRE Score`*`TOEFL Score`+`Research`*CGPA,df)))
+
+```
+
+Even if this model gave a better R\^2 and RSE, but this is not a good model to consider, since most p-values are now insignificant.
+
+So our model is model5 model5 \<- lm(`Chance of Admit`\~`Sport Involvement`+`GRE Score`\* TOEFL Score +LOR+`Research`\*CGPA,df))
+
+# Checking for outliers
+
+We should assess whether there are outliers in our data. If outliers are present, it's important to consider how our model will perform when these outliers are removed from the dataset. To do so, we can plot the studentized residuals. Observations whose studentized residuals are greater than 3 in absolute value are possible outliers.
+
+```{r}
+outlier <- rstudent(model5)
+plot(outlier)
+abline(h = 0, col = "red")
+abline(h = 3, col = "blue")
+abline(h = -3, col = "blue")
+
+```
+
+Three observations were below -3, we will remove them and see how our model is performing. First, we find the indices of outliers, and then extract these points points from our original dataset.
+
+```{r}
+threshold <- -3
+outlier_indices <- which(outlier < threshold)
+outliers <- df[outlier_indices, ]
+print(outliers)
+cleaned_df <- df[-outlier_indices, ]
+```
+
+```{r}
+(Model<-summary(lm(`Chance of Admit`~`Sport Involvement`+`GRE Score`*`TOEFL Score`+LOR+`Research`*CGPA,cleaned_df)))
+```
+
+Outliers usually do not have a big impact on the least square line but removing them cause a lower RSE and an increase in R\^2, i.e we get a different interpretation of the fit. This is the case here after removing the outliers RSE decreased from 0.04692 to 0.0451 and R\^2 increased from 0.8958 to 0.8998. We conclude that our model became better after removing the outliers.
+
+# Further Hypothesis

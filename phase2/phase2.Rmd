@@ -1,0 +1,793 @@
+---
+title: "Project 2"
+author: "Marise & George"
+date: "2023-11-16"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+About Dataset (copy pasted)
+Data Set Information:
+The dataset is Electronic Health Record Predicting collected from a private Hospital in Indonesia. It contains the patients laboratory test results used to determine next patient treatment whether in care or out care patient. The task embedded to the dataset is classification prediction. 
+Attribute Information:
+Given is the attribute name, attribute type, the measurement unit and a brief description. The number of rings is the value to predict: either as a continuous value or as a classification problem. Name / Data Type / Value Sample/ Description----------------------------- 
+HAEMATOCRIT /Continuous /35.1 / Patient laboratory test result of haematocrit
+HAEMOGLOBINS/Continuous/11.8 / Patient laboratory test result of haemoglobins
+ERYTHROCYTE/Continuous/4.65 /  Patient laboratory test result of erythrocyte
+LEUCOCYTE/Continuous /6.3 / Patient laboratory test result of leucocyte
+THROMBOCYTE/Continuous/310/ Patient laboratory test result of thrombocyte
+MCH/Continuous /25.4/ Patient laboratory test result of MCH
+MCHC/Continuous/33.6/ Patient laboratory test result of MCHC
+MCV/Continuous /75.5/ Patient laboratory test result of MCV
+AGE/Continuous/12/ Patient age
+SEX/Nominal – Binary/F/ Patient gender
+SOURCE/Nominal/ {in,out}/The class target in.= in care patient, out = out care patient
+
+
+First, all the libraries used were defined, and then we read the CSV file after setting the 
+working directory
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+library(leaps)
+library(caret)
+library(MASS)
+library("pROC")
+setwd("C:/Users/Admin/OneDrive - Lebanese American University/Documents/DataMining")
+df <- read_csv("data-ori.csv")
+```
+
+No Na values are present in the file since the dim function gave the same output before and after calling the drop_na function.
+The aim of removing rows with missing values is to ensure our data is complete, avoid errors and improve the quality of our data.
+
+```{r}
+dim(df)
+```
+
+```{r}
+df <- drop_na(df)
+dim(df) 
+```
+
+Here is an overview of the predictors and the response variable "SOURCE" we are working with
+
+```{r}
+colnames(df)
+```
+
+All predictors are of numerical type, except for 'SEX' and 'SOURCE', which are of character type.
+They will be converted to factors since they represent categorical variables.
+
+```{r}
+str(df)
+```
+
+Since the data description does not provide the range of values, we rely on the summary function to extract the range (min and max)
+Consequently, we are not be able to determine if any predictor represents out-of-range values.
+
+```{r}
+summary(df)
+```
+
+We did not detect any duplicates in our dataset. However, if duplicates were present, it is 
+advisable to remove them, as they can introduce correlated error terms, leading to an 
+undeserved sense of confidence in our model in subsequent analyses. 
+Then we view our dataset with the View() function
+
+```{r}
+df[duplicated(df), ] 
+View(df)
+```
+
+There are no sentinel or unexpected random values observed in these two predictors. 
+Concerning the other numerical predictors, the summary function indicates the absence of unusual negative values in the minimum, and the maximum values appear to be within logical ranges.
+
+
+```{r}
+unique(df$SEX)
+unique(df$SOURCE)
+```
+
+The purpose of this plot is to check if the classes are balanced, if not, a specific classifier and a null classifier can give similar values.
+Approximately 40.4% of patients fall under 'in care' category, while around 59.6% are 'out of care' patients. 
+Therefore, the data exhibits a relatively balanced distribution between the classes.
+
+```{r}
+ggplot(data = df, aes(x = SOURCE)) +
+  geom_bar(fill = "purple", color = "black") +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
+  labs(x = "care type", y = "Frequency")
+
+```
+
+The majority of individuals in our dataset fall within the age range of 25 to 65.
+```{r}
+ggplot(data = df, aes(x = AGE)) +
+  geom_density(fill = "blue", color = "black", alpha = 0.4) +
+  scale_x_continuous(breaks = seq(1, 99, by = 4))
+
+```
+
+We have a nearly equal number of male and female patients in our dataset.
+
+```{r}
+ggplot(data = df, aes(x = SEX)) +
+  geom_bar(fill = "yellow", color = "black") 
+```
+
+We found correlation between these predictors only 
+
+```{r}
+cor(df$HAEMATOCRIT,df$HAEMOGLOBINS)
+cor(df$HAEMATOCRIT,df$ERYTHROCYTE)
+
+cor(df$HAEMOGLOBINS,df$ERYTHROCYTE)
+
+cor(df$MCH,df$MCHC)
+cor(df$MCH,df$MCV)
+```
+
+```{r}
+df$SOURCE <- as.factor(df$SOURCE)
+df$SEX <- as.factor(df$SEX)
+```
+
+Subset selection 
+We conduct best, forward and backward subset selection methods to determine the predictors chosen by each based on adjusted R^2, Cp, and BIC criteria
+
+1- Best Subset Selection
+```{r}
+regfit.full <- regsubsets(SOURCE ~ . ,df,nvmax=10)
+reg.summary <- summary (regfit.full)
+```
+
+Based on these two graphs, adjusted R^2 selects the eight-variable model containing the predictors :
+"ERYTHROCYTE", "LEUCOCYTE", "THROMBOCYTE", "MCH", "MCHC", "MCV","AGE" and "SEX"  
+
+It's worth noting that in this graph, the curve remains quite flat after the rapid increase in adjusted R^2 at the beginning of the graph,
+indicating minimal differences in accuracy between models with eight variables and those having fewer predictors, e.g a model with four-variable.
+
+```{r}
+plot(reg.summary$adjr2 ,xlab="Number of Variables ",ylab="Adjusted RSq",type="l",col='blue')
+max_index <- which.max(reg.summary$adjr2)
+max_adjr2 <- reg.summary$adjr2[max_index]
+points(max_index, max_adjr2, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.full ,max_index)
+plot(regfit.full ,scale="adjr2")
+coef(regfit.full ,8)
+```
+
+Cp selects the same predictors as Adjusted R^2 
+Similarly after the rapid decrease in Cp at the beginning of the graph, the curve remains quite flat,
+indicating minimal differences in accuracy between models with eight variables and those having fewer predictors, e.g a four-variable model.
+
+```{r}
+plot(reg.summary$cp ,xlab="Number of Variables ",ylab="Cp",type="l",col='blue')
+min_index <- which.min(reg.summary$cp)
+min_cp <- reg.summary$cp[min_index]
+points(min_index, min_cp, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.full ,min_index)
+plot(regfit.full ,scale="Cp")
+coef(regfit.full ,8)
+```
+
+Using BIC results in the selection of a model that contains four variables:
+"HAEMOGLOBINS", "LEUCOCYTE", "THROMBOCYTE", "SEX"   
+This specific model (four_variable model) represents the lowest point on the plot, with higher points both before and after it.
+
+```{r}
+plot(reg.summary$bic ,xlab="Number of Variables ",ylab="BIC",type="l",col='blue')
+min_index <- which.min(reg.summary$bic)
+min_bic <- reg.summary$bic[min_index]
+points(min_index, min_bic, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.full ,min_index)
+plot(regfit.full ,scale="bic")
+coef(regfit.full ,4)
+```
+
+In the subsequent code, we showcase the predictors selected through best subset selection in each step of the algorithm, alongside the corresponding values of Adjusted R^2, Cp, and BIC at every stage. 
+(we will do similarly for forward and backward subset selection)
+
+Our graphical representations, previously depicted, are now translated into numerical insights. 
+Notably, the adjusted R^2 exhibits marginal increments in models comprising more than four variables, ranging from 0.16585465 to a maximum of 0.16904373, 
+with a difference of 0.0031.
+
+Similarly, the Cp metric experiences a slight decrease following a four-variable model, dropping from 20.911412 to a minimum of 7.385411, indicating a difference of 13.53.
+
+Furthermore, the BIC metric reaches its minimum value within a four-variable model, recorded at -762.1479. 
+An interesting observation is the inclusion of 'HAEMATOCRIT' and 'HAEMOGLOBINS' in some models but not the chosen ones by our used metrics
+
+
+```{r}
+best<- regsubsets(SOURCE ~ .,  data = df, nbest = 1, method ="exhaustive",nvmax=10)
+with(summary(best), data.frame(adjr2,cp,bic,outmat))
+```
+
+The model containing all of the predictors will always have the smallest RSS,since this quantity is related to the training error. 
+Instead, we wish to choose a model with a low test error.Therefore, RSS is not suitable for selecting the best model among a collection of models with different numbers of predictors. (similar for R^2)
+
+
+```{r}
+plot(reg.summary$rss ,xlab="Number of Variables ",ylab="RSS",type="l",col='blue')
+min_index <- which.min(reg.summary$rss)
+min_rss <- reg.summary$rss[min_index]
+points(min_index, min_rss, col = "red", pch = 16)
+```
+
+2- Forward Subset Selection
+
+```{r}
+regfit.fwd <- regsubsets (SOURCE ~. ,data=df , nvmax=10,method ="forward")
+fwd.summary <-  summary (regfit.fwd)
+```
+
+
+Both Adjusted R^2 and Cp results in the selection of a full model with minimal difference in these values between a full model and models containing less variables starting from a certain point like above. 
+BIC also reached its minimum at a four- variable model containing : "HAEMOGLOBINS", "LEUCOCYTE", "THROMBOCYTE", "SEX"
+
+```{r}
+plot(fwd.summary$adjr2 ,xlab="Number of Variables ",ylab="Adjusted RSq",type="l",col='blue')
+max_index <- which.max(fwd.summary$adjr2)
+max_adjr2 <- fwd.summary$adjr2[max_index]
+points(max_index, max_adjr2, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.fwd ,max_index)
+plot(regfit.fwd ,scale="adjr2")
+coef(regfit.fwd  ,10)
+
+```
+
+```{r}
+plot(fwd.summary$cp ,xlab="Number of Variables ",ylab="Cp",type="l",col='blue')
+min_index <- which.min(fwd.summary$cp)
+min_cp <- fwd.summary$cp[min_index]
+points(min_index, min_cp, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.fwd ,min_index)
+plot(regfit.fwd ,scale="Cp")
+coef(regfit.fwd  ,10)
+```
+
+```{r}
+plot(fwd.summary$bic ,xlab="Number of Variables ",ylab="BIC",type="l",col='blue')
+min_index <- which.min(fwd.summary$bic)
+min_bic <- fwd.summary$bic[min_index]
+points(min_index, min_bic, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.fwd ,min_index)
+plot(regfit.fwd ,scale="bic")
+coef(regfit.fwd  ,4)
+```
+
+With slight variations in the values, our previous insights derived from best subset selection can be extrapolated to forward subset selection.
+A noticeable difference between best and forward subset selection is that, in forward subset selection, once 'HAEMOGLOBINS' is selected in the initial step, it cannot be removed anymore.
+Conversely, in best subset selection, although 'HAEMOGLOBINS' may initially appear, it is not seen among the chosen models.
+
+```{r}
+forward <- regsubsets(SOURCE ~ .,data = df, nbest = 1, method ="forward",nvmax=10)
+with(summary(forward), data.frame(adjr2,cp,bic,outmat))
+```
+
+3- Backward Subset Selection
+
+```{r}
+regfit.bwd <- regsubsets (SOURCE ~ .,data=df , nvmax=10,method ="backward")
+bwd.summary = summary (regfit.bwd)
+```
+
+We can see that Adjusted R^2 and Cp chose the same models chosen in best subset selection with a little difference in the curves
+And BIC chose a five- variable model containing : "ERYTHROCYTE", "LEUCOCYTE", "THROMBOCYTE", "MCH" and "SEX" 
+
+```{r}
+plot(bwd.summary$adjr2 ,xlab="Number of Variables ",ylab="Adjusted RSq",type="l",col='blue')
+max_index <- which.max(bwd.summary$adjr2)
+max_adjr2 <- bwd.summary$adjr2[max_index]
+points(max_index, max_adjr2, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.bwd ,max_index)
+plot(regfit.bwd ,scale="adjr2")
+coef(regfit.bwd  ,8)
+```
+
+```{r}
+plot(bwd.summary$cp ,xlab="Number of Variables ",ylab="Cp",type="l",col='blue')
+min_index <- which.min(bwd.summary$cp)
+min_cp <- bwd.summary$cp[min_index]
+points(min_index, min_cp, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.bwd ,min_index)
+plot(regfit.bwd ,scale="Cp")
+coef(regfit.bwd  ,8)
+```
+
+```{r}
+plot(bwd.summary$bic ,xlab="Number of Variables ",ylab="BIC",type="l",col='blue')
+min_index <- which.min(bwd.summary$bic)
+min_bic <- bwd.summary$bic[min_index]
+points(min_index, min_bic, col = "red", pch = 16)
+```
+
+```{r}
+coef(regfit.bwd ,min_index)
+plot(regfit.bwd ,scale="bic")
+coef(regfit.bwd  ,5)
+```
+
+Since the curves in the graphs represent a slower increase in Adjusted R^2 and a slower decrease in Cp and BIC compared to best and forward subset selection a model with four-variable predictors and a model with five variable predictors show a remarkable difference in adjusted R^2 and Cp in backward subset selection compared to the other methods.
+Following this point(number of predictors =5),a minimal increase and decrease in adjusted R^2 and Cp respectively are shown in the values and curves.
+
+```{r}
+backward <- regsubsets(SOURCE ~., data = df, nbest = 1, method ="backward",nvmax=10)
+with(summary(backward), data.frame(adjr2,cp,bic,outmat))
+```
+
+We present an overall summary :
+
+The same models were selected by Cp and Adjusted R^2 in best and backward subset selection but a full one was selected in the forward approach.
+BIC chose a four-variable model in best and forward subset selection with a predictor difference HAEMOGLOBINS in best and HAEMATOCRIT in forward
+Finally BIC selected a five variable model in the backward method
+Since BIC place a heavier penalty on models with many variables when n>7 it is not unusual to see that BIC chose models with lowest predictors
+
+```{r}
+values <- c(8, 8, 4,'ERY,LEU,THR,MCH,MCHC,MCV,AGE,SEX','ERY,LEU,THR,MCH,MCHC,MCV,AGE,SEX','HAEMO,LEU,THR,SEX',
+            10, 10, 4, 'ALL', 'ALL','HAEMA,LEU,THR,SEX', 8, 8, 5,'ERY,LEU,THR,MCH,MCHC,MCV,AGE,SEX','ERY,LEU,THR,MCH,MCHC,MCV,AGE,SEX','ERY,LEU,THR,MCH,SEX')
+overview <- matrix(values,nrow=6, ncol=3, byrow=TRUE)
+colnames(overview) <- c('Adjusted R^2', 'Cp', 'BIC')
+rownames(overview) <- c('Best:numb of X selected', 'Best:Selected features','Forward:numb of X selected', 'Forward:Selected features','Backward:numb of X selected', 'Backward:Selected features')
+print(overview)
+```
+```{r}
+df$SOURCE<-ifelse(df$SOURCE=="in",0,1)
+```
+
+We plot each predictor with the response with the aim to see an S-shaped curve 
+However we do not obtain any complete S-shape curve and the final four plots are linear, knowing that our models are correct.
+We checked the output using a different library than ggplot, library(lessR) and we got the same curves
+What we found after doing a lit bit of research was that 
+An intercept estimates the expected value of the response on the logit scale when all of the features are zero. 
+In this case, the intercept is such that setting all the features to zero yields 
+a prediction that is not zero on the probability scale.
+
+```{r}
+ggplot(df, aes(x = HAEMATOCRIT , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="green", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = HAEMOGLOBINS , y =SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="blue", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = ERYTHROCYTE , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="red", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = LEUCOCYTE , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="yellow", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = THROMBOCYTE , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="pink", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = MCH , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="cyan", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = MCHC , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="black", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = MCV , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="purple", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+```{r}
+ggplot(df, aes(x = AGE , y = SOURCE)) + geom_point() +
+  stat_smooth(method="glm", color="orange", se=FALSE, 
+              method.args = list(family=binomial))
+```
+
+From the selected models identified through best, forward and backward subset selection 
+employing adjusted R^2, Cp, and BIC statistics, our objective is to determine the most suitable one for our data. 
+We plan to begin by fitting these models—starting with logistic regression, followed by LDA and QDA—and
+then assess the accuracy of these models using k-fold cross-validation.
+
+```{r}
+df$SOURCE <- as.factor(df$SOURCE)
+set.seed(1234)
+df <- df %>% mutate(id=row_number())
+dim(df)
+tr= df %>% slice_sample(prop=0.7)
+te=anti_join(df,tr,by='id')
+tr=tr %>% mutate(id=NULL)
+te=te %>% mutate(id=NULL)
+```
+
+Here the number of predictors is 10 so performing 10-fold cross validation is the same as leave_on_out cross validation
+So in our case we are performing both at the same time
+
+1- logistic regression 
+```{r}
+set.seed(000)
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 10,savePredictions = "all")
+
+```
+In the first model containing eight predictors, the Intercept and AGE have insignificant p-value.
+
+```{r}
+model1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
+                tr,method="glm",family = binomial(),
+                trControl=ctrl)
+```
+```{r}
+model1
+summary(model1)
+```
+
+
+All four predictors have a significant p-value
+```{r}
+model2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
+                tr,method="glm",family = binomial(),
+                trControl=ctrl)
+model2  
+summary(model2)
+```
+
+The full model has insignificant p-values for the Intercept, HAEMATOCRIT, HAEMOGLOBINS and AGE
+
+```{r}
+model3 <- train(SOURCE ~ .,
+                tr,method="glm",family = binomial(),
+                trControl=ctrl)
+model3 
+summary(model3)
+```
+
+All preditors in model 4 and 5 have significant p-values.
+```{r}
+model4 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
+                tr,method="glm",family = binomial(),
+                trControl=ctrl)
+model4 
+summary(model4)
+```
+
+```{r}
+model5 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
+                tr,method="glm",family = binomial(),
+                trControl=ctrl)
+model5 
+summary(model5)
+```
+
+What we really care about is how each of our models perform on unseen data
+
+```{r}
+pred1 <- predict(model1,newdata = te)
+confusionMatrix(data=pred1, te$SOURCE)
+```
+
+```{r}
+pred2 <- predict(model2,newdata = te)
+confusionMatrix(data=pred2, te$SOURCE)
+```
+
+
+```{r}
+pred3 <- predict(model3,newdata = te)
+confusionMatrix(data=pred3, te$SOURCE)
+```
+
+
+```{r}
+pred4 <- predict(model4,newdata = te)
+confusionMatrix(data=pred4, te$SOURCE)
+```
+
+
+```{r}
+pred5 <- predict(model5,newdata = te)
+confusionMatrix(data=pred5, te$SOURCE)
+```
+
+```{r}
+valuesGLM <- c(3568,0.7145,0.3662,0.4751,0.8703,
+               3590.7,0.7115,0.36,0.4732,0.8666,
+               3567.9,0.7145,0.3662,0.4751,0.8703,
+               3585.8,0.7062,0.349,0.4693,0.8603,
+               3583.4,0.713,0.3629,0.4732,0.8691)
+GLMoverview <- matrix(valuesGLM,nrow=5, ncol=5, byrow=TRUE)
+colnames(GLMoverview) <- c('Deviance', 'Accuracy (test)', 'Kappa', 'Sensitivity','Specificity')
+rownames(GLMoverview) <- c('Model1', 'Model2','Model3', 'Model4','Model5')
+view(GLMoverview)
+print(GLMoverview)
+```
+
+The third model exhibits the lowest deviance, as expected since it represents the full model, and as the number of predictors increases, the deviance tends to decrease across all models. 
+
+Similar sensitivities and specificities are observed in all models. The kappa values, ranging from 0.349 to 0.3662 in the five models, fall within the 0.21–0.40 range, indicating a fair to moderate level of agreement beyond chance.
+
+Regarding accuracy, which corresponds to correctly classified observations across all classifications,
+model 4, comprising four predictors, displays the lowest accuracy at 0.7062, hence the highest error rate, given that accuracy= 1 - the error rate. 
+Models 1 and 3, with 8 and 10 predictors respectively, exhibit the highest accuracy of 0.7145.
+Model 5, containing five predictors, achieves an accuracy of 0.713, while model 2, with four predictors, reaches an accuracy of 0.7115.
+
+Our preference is for model 2, containing HAEMOGLOBINS, LEUCOCYTE, THROMBOCYTE, and SEX. 
+Its accuracy differs only by 0.003 from the highest accurate models, and it possesses only four predictors. 
+Thus, sacrificing 0.003 accuracy for substantially enhanced interpretability compared to models with 8 or 10 predictors seems a reasonable choice.
+
+
+Logistic regression doesn't assume any specific data distribution or covariance matrices. 
+In contrast, LDA and QDA assume that each class follows a Gaussian distribution, with LDA further assuming equal covariance matrices for each class.
+
+Let's investigate whether employing LDA and QDA leads to selecting the same model as logistic regression or not. 
+Additionally, we'll explore whether fitting the models with LDA and QDA results in a notable increase in accuracy or a reduction in test error compared to logistic regression.
+
+We'll apply LDA and QDA to models containing 4, 5, and 8 predictors. 
+It's evident that the full model won't be chosen as it lacks interpretability and based on the logistic model,
+it won't anticipate a significant improvement in prediction accuracy.
+Hence Model3 will not be included anymore
+
+2- LDA Cross Validation
+```{r}
+k.lda.mod1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
+                 tr,method="lda",family = binomial(),
+                 trControl=ctrl)
+kpred1 <- predict(k.lda.mod1,newdata = te)
+confusionMatrix(data=kpred1, te$SOURCE)
+```
+
+```{r}
+k.lda.mod2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
+                    tr,method="lda",family = binomial(),
+                    trControl=ctrl)
+kpred2 <- predict(k.lda.mod2,newdata = te)
+confusionMatrix(data=kpred2, te$SOURCE)
+```
+
+
+```{r}
+k.lda.mod3 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
+                    tr,method="lda",family = binomial(),
+                    trControl=ctrl)
+kpred3 <- predict(k.lda.mod3,newdata = te)
+confusionMatrix(data=kpred3, te$SOURCE)
+```
+
+
+```{r}
+k.lda.mod4 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
+                    tr,method="lda",family = binomial(),
+                    trControl=ctrl)
+kpred4 <- predict(k.lda.mod4,newdata = te)
+confusionMatrix(data=kpred4, te$SOURCE)
+```
+
+```{r}
+valuesLDA <- c(0.71,0.3511,0.4483,0.8803,
+               0.7122,0.3564,0.4521,0.8815,
+               0.7024,0.3337,0.4368,0.8753,
+               0.7047,0.34,0.4444,0.8741)
+LDAoverview <- matrix(valuesLDA,nrow=4, ncol=4, byrow=TRUE)
+colnames(LDAoverview) <- c('Accuracy (test)', 'Kappa', 'Sensitivity','Specificity')
+rownames(LDAoverview) <- c('Model1', 'Model2','Model4', 'Model5')
+view(LDAoverview)
+print(LDAoverview)
+```
+
+There is no remarkable difference between these values and the values obtained previously in Logistic regression
+Once again we will choose Model2 containing HAEMOGLOBINS, LEUCOCYTE, THROMBOCYTE, and SEX. In LDA this models shows the highest accuracy hence lowest test error.
+
+3- QDA Cross-Validation
+```{r}
+k.qda.mod1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
+                    tr,method="qda",family = binomial(),
+                    trControl=ctrl)
+k.pred1 <- predict(k.qda.mod1,newdata = te)
+confusionMatrix(data=k.pred1, te$SOURCE)
+```
+
+
+```{r}
+k.qda.mod2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
+                    tr,method="qda",family = binomial(),
+                    trControl=ctrl)
+k.pred2 <- predict(k.qda.mod2,newdata = te)
+confusionMatrix(data=k.pred2, te$SOURCE)
+```
+
+
+```{r}
+k.qda.mod4 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
+                    tr,method="qda",family = binomial(),
+                    trControl=ctrl)
+k.pred4 <- predict(k.qda.mod4,newdata = te)
+confusionMatrix(data=k.pred4, te$SOURCE)
+```
+
+```{r}
+k.qda.mod5 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
+                    tr,method="qda",family = binomial(),
+                    trControl=ctrl)
+k.pred5 <- predict(k.qda.mod5,newdata = te)
+confusionMatrix(data=k.pred5, te$SOURCE)
+```
+
+```{r}
+valuesQDA <- c(0.7304,0.4059,0.5153,0.8703,
+               0.716,0.366,0.4617,0.8815,
+               0.71,0.3507,0.4464,0.8815,
+               0.7153,0.3632,0.4559,0.884)
+QDAoverview <- matrix(valuesQDA,nrow=4, ncol=4, byrow=TRUE)
+colnames(QDAoverview) <- c('Accuracy (test)', 'Kappa', 'Sensitivity','Specificity')
+rownames(QDAoverview) <- c('Model1', 'Model2','Model4', 'Model5')
+view(QDAoverview)
+print(QDAoverview)
+```
+We noticed a marginal enhancement in values when employing QDA
+the highest accuracy rose to 0.7304 in Model 1, which includes eight predictors. 
+Like LDA and Logistic regression, the sensitivity and specificity values among the models are closely aligned 
+and don't exhibit significant deviations from those observed in LDA and Logistic regression.
+We will still choose Model2  containing the four predictors and not Model1
+We're willing to trade off a 0.02 increase in accuracy for a significant gain in interpretability.
+
+
+
+We perform LDA and QDA using the validation set approach to compare the results with those obtained through cross-validation.
+
+LDA  validation-set approach
+```{r}
+lda.mod1 <- lda(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,data=tr)
+lda.pred1 <- predict(lda.mod1, newdata=te)
+confusionMatrix(data=lda.pred1$class, te$SOURCE)
+
+```
+
+
+```{r}
+lda.mod2 <- lda(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,data=tr)
+lda.pred2 <- predict(lda.mod2, newdata=te)
+confusionMatrix(data=lda.pred2$class, te$SOURCE)
+```
+
+
+```{r}
+lda.mod4 <- lda(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,data=tr)
+lda.pred4 <- predict(lda.mod4, newdata=te)
+confusionMatrix(data=lda.pred4$class, te$SOURCE)
+```
+
+
+```{r}
+lda.mod5 <- lda(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,data=tr)
+lda.pred5 <- predict(lda.mod5, newdata=te)
+confusionMatrix(data=lda.pred5$class, te$SOURCE)
+```
+
+QDA validation-set approach
+
+```{r}
+qda.mod1 <- qda(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,data=tr)
+qda.pred1 <- predict(qda.mod1, newdata=te)
+confusionMatrix(data=qda.pred1$class, te$SOURCE)
+```
+
+
+```{r}
+qda.mod2 <- qda(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,data=tr)
+qda.pred2 <- predict(qda.mod2, newdata=te)
+confusionMatrix(data=qda.pred2$class, te$SOURCE)
+```
+
+
+```{r}
+qda.mod4 <- qda(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,data=tr)
+qda.pred4 <- predict(qda.mod4, newdata=te)
+confusionMatrix(data=qda.pred4$class, te$SOURCE)
+```
+
+```{r}
+qda.mod5 <- qda(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,data=tr)
+qda.pred5 <- predict(qda.mod5, newdata=te)
+confusionMatrix(data=qda.pred5$class, te$SOURCE)
+```
+
+We're seeing identical outcomes in both cross-validation and the validation set, 
+potentially because the number of observation is relatively large compared to the number of predictors, which could be a contributing factor to this consistency.
+
+We split the data differently, and repeated the LDA and QDA processes, generating testing errors using both the validation set approach and cross-validation
+and we didn't specify any seed. Each time,we consistently obtained identical results.
+
+
+The aim of this roc-curve is to see which metod LAD or QDA performed better on our chosen model (Model2)
+
+```{r}
+roc_lda= roc(response=te$SOURCE,
+             predictor= lda.pred2$posterior[,2])
+roc_qda= roc(response=te$SOURCE,
+             predictor= qda.pred2$posterior[,2])
+```
+
+```{r}
+ggroc(list(lda=roc_lda,
+           qda=roc_qda))
+```
+```{r}
+auc(roc_lda)
+auc(roc_qda)
+```
+
+The area under the curve in LDA 0.7421 is lower than the area under the curve in QDA 0.7577 
+Hence QDA is preferable in this case
+
+From the roc curves we concluded that QDA performs better than LDA on Model2, but we want to compare Logistic regression to these two methods as well
+Hence we do this following graph
+
+```{r}
+values <- c(0.7145, 0.71, 0.7304, 0.7115, 0.7122, 0.716, 0.7062, 0.7024, 0.71, 0.713, 0.7047, 0.7153)
+models <- matrix(values, nrow = 4, ncol = 3, byrow = TRUE)
+colnames(models) <- c( 'GLM', 'LDA','QDA')
+rownames(models) <- c('ERY,LEU,THR,MCH,MCHC,MCV,AGE,SEX', 'HAEMO,LEU,THR,SEX','HAEMA,LEU,THR,SEX', 'ERY,LEU,THR,MCH,SEX')
+```
+
+```{r}
+lda_error <- mean(lda.pred2$class != te$SOURCE)
+qda_error <- mean(qda.pred2$class != te$SOURCE)
+glm_error <- mean(pred2 != te$SOURCE)
+
+```
+```{r}
+error_data <- data.frame(
+  Method = c("LDA", "QDA", "GLM"),
+  Error = c(lda_error, qda_error, glm_error)
+)
+```
+
+```{r}
+boxplot(Error ~ Method, data = error_data, main = "Test Error Rates", ylab = "Error Rate")
+```
+
+Our findings indicate that QDA exhibits the lowest test error rate at 0.284, 
+while LDA and Logistic Regression demonstrate error rates of 0.2875 and 0.2885, respectively. 
+The difference in error rate is so minimal that the use of a simpler linear method is also possible in our case.
+
+
+A notable observation is that none of the pairs of predictors in Model2 ("HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX") match the pairs we previously identified as correlated.
