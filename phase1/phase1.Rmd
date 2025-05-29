@@ -1,3 +1,9 @@
+---
+output:
+  word_document: default
+  pdf_document:
+    latex_engine: xelatex
+---
 ## **About Dataset (copy pasted from Kaggle)**
 
 Dataset contains under given important parameters which are considered mainly during application for Masters Programs.
