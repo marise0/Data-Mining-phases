@@ -1,0 +1,13 @@
+tidyverse==2.0.0
+ggplot2==3.5.2
+caret==7.0.1
+pROC==1.18.5
+factoextra==1.0.7
+dendextend==1.19.0
+FactoMineR==2.11
+ggcorrplot==0.1.4.1
+rpart==4.1.24
+rpart.plot==3.1.2
+caTools==1.18.3
+randomForest==4.7.1.2
+xgboost==1.7.11.1

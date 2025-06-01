@@ -1,0 +1,7 @@
+tidyverse==2.0.0
+ggplot2==3.5.2
+reshape2==1.4.4
+leaps==3.2
+caret==7.0.1
+MASS==7.3.65
+pROC==1.18.5
