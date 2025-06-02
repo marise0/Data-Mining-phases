@@ -7,13 +7,13 @@
 
 ### \:file\_folder: phase1
 
-:white_check_mark: Selected a dataset with a **quantitative** response variable to work with, avoiding overlap with existing solutions available.
+:white_check_mark: Dataset Selection: Selected a dataset with a **quantitative** response variable to work with, avoiding overlap with existing solutions available.
 
 \:mag: Data Preprocessing & Cleaning
 
 \:bar\_chart: Visualization & Exploration:  Performed exploratory data analysis (EDA)
 
-\:chart\_with\_upwards\_trend: Linear Regression: Applied linear regression techniques (not models)
+\:chart\_with\_upwards\_trend: Linear Regression: Applied linear regression techniques
 
 \:bulb: Hypotheses for Further Exploration: From the initial exploration, furher hypotheses were proposed
 
