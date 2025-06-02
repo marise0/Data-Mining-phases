@@ -37,11 +37,40 @@ The dataset contains 400 observations with the following features:
 
 :female_detective: Research Engagement: Nearly equal distribution between students with and without research experience.
 
+![Alt text](../figures/research.png)
+
 :cartwheeling: Sport Involvement: Majority of students participated in sports.
+
+![Alt text](../figures/sport.png)
 
 :signal_strength: Involvement in sports or research activities is associated with a higher likelihood of admission.
 
+<p float="left">
+  <img src="../figures/1.png" width="45%" />
+  <img src="../figures/2.png" width="45%" />
+</p>
+
 :3rd_place_medal: University Ratings: Most applications were to universities rated 3.
+
+![Alt text](../figures/ranking.png)
 
 :capital_abcd: CGPA Distribution: Highest density of applicants had CGPAs between 8.5 and 8.7.
 
+![Alt text](../figures/CGPA.png)
+
+:infinity: Correlation Analysis: All predictors showed significant correlation with the target variable (Chance of Admit).
+
+![Alt text](../figures/COR.png)
+
+\:chart\_with\_upwards\_trend: Linear Model Development
+
+Initial Models: Simple linear regression confirmed significant relationships between each predictor and admission chance.
+
+Final Model:
+Chance of Admit ~ Sport Involvement + GRE Score * TOEFL Score + LOR + Research * CGPA
+
+Performance:
+R²: 0.904 (after outlier removal)
+RSE: 0.044
+
+Outlier Handling: Identified and removed 4 outliers, improving model performance (R² increased from 0.894 to 0.904).
