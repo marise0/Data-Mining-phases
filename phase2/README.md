@@ -35,7 +35,7 @@ The dataset contains 4412 observations with the following features:
 
 :heavy_check_mark: Class distribution was balanced: ~40.4% in care, ~59.6% out care.
 
-![Alt text](../figures/research.png)
+![Alt text](../figures/balance.png)
 
 *Data was logical and clean*
 
@@ -61,6 +61,17 @@ Meanwhile, BIC selected a four-variable model in both the best and forward selec
 Finally, BIC selected a five-variable model in the backward selection method.
 Since BIC applies a heavier penalty on model complexity—especially when n > 7—it is not unusual for it to favor models with fewer predictors.
 
-:date: The table below summarizes how many features were selected by each metric (lowest score for C<sub>p</sub> and BIC, and higher score for Adjusted R²), along with the names of the selected features.
+:date: The table below summarizes how many features were selected by each metric (lowest score for C<sub>p</sub> and BIC, and highest score for Adjusted R²), along with the names of the selected features.
 
-![Alt text](../figures/research.png)
+![Alt text](../figures/table.png)
+
+Based on the models selected through best, forward, and backward subset selection—using Adjusted R², C<sub>p</sub>, and BIC as evaluation criteria—our objective is to identify the most suitable model for our dataset. We will begin by fitting each of these models using logistic regression, followed by Linear Discriminant Analysis (LDA) and Quadratic Discriminant Analysis (QDA).
+Model performance will be evaluated using k-fold cross-validation to ensure robust and reliable accuracy assessments.
+
+## 📈 Classification Techniques and 🔁 Resampling Techniques
+Across the :three: classification techniques, the model including `HAEMOGLOBINS`, `LEUCOCYTE`, `THROMBOCYTE`, and `SEX` appears to be the best fit for our data.
+
+In addition to that QDA seem to be the best fit for our data
+![Alt text](../figures/table.png)
+
+
