@@ -440,9 +440,6 @@ tr=tr %>% mutate(id=NULL)
 te=te %>% mutate(id=NULL)
 ```
 
-Here the number of predictors is 10 so performing 10-fold cross validation is the same as leave_on_out cross validation
-So in our case we are performing both at the same time
-
 1- logistic regression 
 ```{r}
 set.seed(000)
