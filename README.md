@@ -21,7 +21,7 @@
 
 ### \:file\_folder: phase2
 
-:white_check_mark: Dataset Selection: Chose a dataset with a quantitative response variable, ensuring it is original and not derived from any existing online solutions.
+:white_check_mark: Dataset Selection: Chose a dataset with a **qualitative** response variable, ensuring it is original and not derived from any existing online solutions.
 
 :scissors:Subset Selection: Applied various subset selection approaches using different evaluation measures (Cp, BIC, adjusted R²).
 
