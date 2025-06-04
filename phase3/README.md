@@ -1,3 +1,4 @@
+
 # phase3
 
 This phase builds upon the previous work by applying advanced clustering techniques (K-means and Hierarchical Clustering) and classification methods (Decision Trees, Bagging, Random Forest, and Boosting) to predict patient care categories ("in care" or "out care") using Electronic Health Records (EHRs) from a private hospital in Indonesia.
@@ -102,4 +103,8 @@ The dataset contains 4412 observations with the following features:
 
 - **Biplot Visualization**: Highlighted the contribution of each variable to the principal components.  
 
-  ![Alt text](../figures/4.png) 
+  ![Alt text](../figures/4.png)
+
+  ---
+
+  :round_pushpin: *Refer to phase3.pdf for detailed explanations.*
