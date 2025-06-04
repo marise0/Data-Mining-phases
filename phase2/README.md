@@ -75,3 +75,5 @@ Additionally, Quadratic Discriminant Analysis (QDA) appears to be the best fit f
 ![Alt text](../figures/error.png)
 
 
+---
+:round_pushpin: *Refer to phase2.pdf for detailed explanations.*
