@@ -74,3 +74,6 @@ R²: 0.904 (after outlier removal)
 RSE: 0.044
 
 Outlier Handling: Identified and removed 4 outliers, improving model performance (R² increased from 0.894 to 0.904).
+
+--- 
+:round_pushpin: *Refer to phase1.pdf for detailed explanations.*
