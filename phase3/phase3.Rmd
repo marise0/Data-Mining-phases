@@ -181,7 +181,6 @@ we reinclude the SOURCE variable previously removed
 In clusters one and three, the count of out-care patients exceeds that of in-care patients,
 while in cluster two, the reverse is observed.
 
-However, the response here is not very significant for our data analysis
 ```{r}
 ds <- ds %>% mutate(cluster= clusters$cluster)
 ds <- ds %>% mutate(SOURCE= df$SOURCE)
@@ -312,8 +311,10 @@ ggplot(ds, aes(x = as.factor(cluster), fill = as.factor(SOURCE))) +
   ggtitle("Count of in/out in each Cluster")
 
 ```
-In both clusters, the count of out-care patients surpasses that of in-care patients. 
-It appears that these clusters do not distinctly separate the two types of patients.
+In both clusters, the number of out-care patients exceeds that of in-care patients.
+The clustering algorithms do not seem to form clusters that clearly separate the two patient types. 
+This suggests that these algorithms may not be well suited for distinguishing between in-care and out-care patients in our dataset.
+
 
 
 PCA
@@ -354,8 +355,8 @@ fviz_eig(data.pca, addlabels = TRUE)
 
 ```
 
-The first principal component places most of its wait on all predictors except "MCHC", "LEUCOCYE" and "THROMBOCYE".
-The second principal component places most of its wait on all predictors except "HAEMATOCRIT","HAEMOGLOBINS", "ERYTHROCYTE", and "AGE".
+The first principal component places most of its weight on all predictors except "MCHC", "LEUCOCYE" and "THROMBOCYE".
+The second principal component places most of its weight on all predictors except "HAEMATOCRIT","HAEMOGLOBINS", "ERYTHROCYTE", and "AGE".
 ```{r}
 data.pca$loadings[, 1:2]
 fviz_pca_var(data.pca, col.var = "black")
