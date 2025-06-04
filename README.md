@@ -7,29 +7,39 @@
 
 ### \:file\_folder: phase1
 
-:white_check_mark: Dataset Selection: Selected a dataset with a **quantitative** response variable to work with, avoiding overlap with existing solutions available.
+:white_check_mark: **Dataset Selection:** Selected a dataset with a **quantitative** response variable to work with, avoiding overlap with existing solutions available.
 
-\:mag: Data Preprocessing & Cleaning
+\:mag: **Data Preprocessing & Cleaning**
 
-\:bar\_chart: Visualization & Exploration:  Performed exploratory data analysis (EDA).
+\:bar\_chart: **Visualization & Exploration:**  Performed exploratory data analysis (EDA).
 
-\:chart\_with\_upwards\_trend: Linear Regression: Applied linear regression techniques.
+\:chart\_with\_upwards\_trend: **Linear Regression:** Applied linear regression techniques.
 
-\:bulb: Hypotheses for Further Exploration: From the initial exploration, furher hypotheses were proposed.
+\:bulb: **Hypotheses for Further Exploration:** From the initial exploration, furher hypotheses were proposed.
 
 ---
 
 ### \:file\_folder: phase2
 
-:white_check_mark: Dataset Selection: Chose a dataset with a **qualitative** response variable, ensuring it is original and not derived from any existing online solutions.
+:white_check_mark: **Dataset Selection:** Chose a dataset with a **qualitative** response variable, ensuring it is original and not derived from any existing online solutions.
 
-:scissors:Subset Selection: Applied various subset selection approaches using different evaluation measures (Cp, BIC, adjusted R²).
+:scissors: **Subset Selection:** Applied various subset selection approaches using different evaluation measures (Cp, BIC, adjusted R²).
 
-\:chart\_with\_upwards\_trend: Classification Techniques: Performed Logistic Regression, Linear Discriminant Analysis (LDA), and Quadratic Discriminant Analysis (QDA).
+\:chart\_with\_upwards\_trend: **Classification Techniques:** Performed Logistic Regression, Linear Discriminant Analysis (LDA), and Quadratic Discriminant Analysis (QDA).
 
-:repeat: Resampling Techniques: Used resampling methods (e.g., cross-validation) and compared the performance of the classifiers.
+:repeat: **Resampling Techniques:** Used resampling methods (e.g., cross-validation) and compared the performance of the classifiers.
 
 ---
 
 ### \:file\_folder: phase3
+
+:white_check_mark: **Dataset Selection:** Worked with the same dataset as phase2
+
+🌲 **Tree-Based Approaches:** Performed Decision Trees, Random Forest, Bagging, and Boosting
+
+❌	 **Unsupervised Technique:** Applied K-Means and Hierarchical Clustering
+
+:chart_with_downwards_trend: **Dimentionality Reduction:** Performed Principal Component Analysis (PCA)
+
+---
 
