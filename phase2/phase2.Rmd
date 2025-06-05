@@ -440,7 +440,7 @@ tr=tr %>% mutate(id=NULL)
 te=te %>% mutate(id=NULL)
 ```
 
-1- logistic regression 
+1- logistic regression with Cross Validation
 ```{r}
 set.seed(000)
 ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 10,savePredictions = "all")
@@ -450,7 +450,7 @@ In the first model containing eight predictors, the Intercept and AGE have insig
 
 ```{r}
 model1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
-                tr,method="glm",family = binomial(),
+                df,method="glm",family = binomial(),
                 trControl=ctrl)
 ```
 ```{r}
@@ -462,7 +462,7 @@ summary(model1)
 All four predictors have a significant p-value
 ```{r}
 model2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
-                tr,method="glm",family = binomial(),
+                df,method="glm",family = binomial(),
                 trControl=ctrl)
 model2  
 summary(model2)
@@ -472,7 +472,7 @@ The full model has insignificant p-values for the Intercept, HAEMATOCRIT, HAEMOG
 
 ```{r}
 model3 <- train(SOURCE ~ .,
-                tr,method="glm",family = binomial(),
+                df,method="glm",family = binomial(),
                 trControl=ctrl)
 model3 
 summary(model3)
@@ -481,7 +481,7 @@ summary(model3)
 All preditors in model 4 and 5 have significant p-values.
 ```{r}
 model4 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
-                tr,method="glm",family = binomial(),
+                df,method="glm",family = binomial(),
                 trControl=ctrl)
 model4 
 summary(model4)
@@ -489,67 +489,19 @@ summary(model4)
 
 ```{r}
 model5 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
-                tr,method="glm",family = binomial(),
+                df,method="glm",family = binomial(),
                 trControl=ctrl)
 model5 
 summary(model5)
 ```
 
-What we really care about is how each of our models perform on unseen data
-
-```{r}
-pred1 <- predict(model1,newdata = te)
-confusionMatrix(data=pred1, te$SOURCE)
-```
-
-```{r}
-pred2 <- predict(model2,newdata = te)
-confusionMatrix(data=pred2, te$SOURCE)
-```
-
-
-```{r}
-pred3 <- predict(model3,newdata = te)
-confusionMatrix(data=pred3, te$SOURCE)
-```
-
-
-```{r}
-pred4 <- predict(model4,newdata = te)
-confusionMatrix(data=pred4, te$SOURCE)
-```
-
-
-```{r}
-pred5 <- predict(model5,newdata = te)
-confusionMatrix(data=pred5, te$SOURCE)
-```
-
-```{r}
-valuesGLM <- c(3568,0.7145,0.3662,0.4751,0.8703,
-               3590.7,0.7115,0.36,0.4732,0.8666,
-               3567.9,0.7145,0.3662,0.4751,0.8703,
-               3585.8,0.7062,0.349,0.4693,0.8603,
-               3583.4,0.713,0.3629,0.4732,0.8691)
-GLMoverview <- matrix(valuesGLM,nrow=5, ncol=5, byrow=TRUE)
-colnames(GLMoverview) <- c('Deviance', 'Accuracy (test)', 'Kappa', 'Sensitivity','Specificity')
-rownames(GLMoverview) <- c('Model1', 'Model2','Model3', 'Model4','Model5')
-view(GLMoverview)
-print(GLMoverview)
-```
-
 The third model exhibits the lowest deviance, as expected since it represents the full model, and as the number of predictors increases, the deviance tends to decrease across all models. 
 
-Similar sensitivities and specificities are observed in all models. The kappa values, ranging from 0.349 to 0.3662 in the five models, fall within the 0.21–0.40 range, indicating a fair to moderate level of agreement beyond chance.
-
 Regarding accuracy, which corresponds to correctly classified observations across all classifications,
-model 4, comprising four predictors, displays the lowest accuracy at 0.7062, hence the highest error rate, given that accuracy= 1 - the error rate. 
-Models 1 and 3, with 8 and 10 predictors respectively, exhibit the highest accuracy of 0.7145.
-Model 5, containing five predictors, achieves an accuracy of 0.713, while model 2, with four predictors, reaches an accuracy of 0.7115.
+model 4, comprising four predictors, displays the lowest accuracy at  0.7166335, hence the highest error rate, given that accuracy= 1 - the error rate. 
 
 Our preference is for model 2, containing HAEMOGLOBINS, LEUCOCYTE, THROMBOCYTE, and SEX. 
-Its accuracy differs only by 0.003 from the highest accurate models, and it possesses only four predictors. 
-Thus, sacrificing 0.003 accuracy for substantially enhanced interpretability compared to models with 8 or 10 predictors seems a reasonable choice.
+Its accuracy differs minimally from the highest accurate models, and it possesses only four predictors. 
 
 
 Logistic regression doesn't assume any specific data distribution or covariance matrices. 
@@ -563,114 +515,74 @@ It's evident that the full model won't be chosen as it lacks interpretability an
 it won't anticipate a significant improvement in prediction accuracy.
 Hence Model3 will not be included anymore
 
-2- LDA Cross Validation
+2- LDA Cross Validation with cross validation
 ```{r}
-k.lda.mod1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
-                 tr,method="lda",family = binomial(),
-                 trControl=ctrl)
-kpred1 <- predict(k.lda.mod1,newdata = te)
-confusionMatrix(data=kpred1, te$SOURCE)
+(k.lda.mod1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
+                 df,method="lda",family = binomial(),
+                 trControl=ctrl))
 ```
 
 ```{r}
-k.lda.mod2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
-                    tr,method="lda",family = binomial(),
-                    trControl=ctrl)
-kpred2 <- predict(k.lda.mod2,newdata = te)
-confusionMatrix(data=kpred2, te$SOURCE)
+(k.lda.mod2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
+                    df,method="lda",family = binomial(),
+                    trControl=ctrl))
 ```
 
 
 ```{r}
-k.lda.mod3 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
-                    tr,method="lda",family = binomial(),
-                    trControl=ctrl)
-kpred3 <- predict(k.lda.mod3,newdata = te)
-confusionMatrix(data=kpred3, te$SOURCE)
+(k.lda.mod3 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
+                    df,method="lda",family = binomial(),
+                    trControl=ctrl))
 ```
 
 
 ```{r}
-k.lda.mod4 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
-                    tr,method="lda",family = binomial(),
-                    trControl=ctrl)
-kpred4 <- predict(k.lda.mod4,newdata = te)
-confusionMatrix(data=kpred4, te$SOURCE)
-```
-
-```{r}
-valuesLDA <- c(0.71,0.3511,0.4483,0.8803,
-               0.7122,0.3564,0.4521,0.8815,
-               0.7024,0.3337,0.4368,0.8753,
-               0.7047,0.34,0.4444,0.8741)
-LDAoverview <- matrix(valuesLDA,nrow=4, ncol=4, byrow=TRUE)
-colnames(LDAoverview) <- c('Accuracy (test)', 'Kappa', 'Sensitivity','Specificity')
-rownames(LDAoverview) <- c('Model1', 'Model2','Model4', 'Model5')
-view(LDAoverview)
-print(LDAoverview)
+(k.lda.mod4 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
+                    df,method="lda",family = binomial(),
+                    trControl=ctrl))
 ```
 
 There is no remarkable difference between these values and the values obtained previously in Logistic regression
-Once again we will choose Model2 containing HAEMOGLOBINS, LEUCOCYTE, THROMBOCYTE, and SEX. In LDA this models shows the highest accuracy hence lowest test error.
+Once again Model2 containing HAEMOGLOBINS, LEUCOCYTE, THROMBOCYTE, and SEX, seems to be a good choice to choose for our data
 
-3- QDA Cross-Validation
+3- QDA with Cross-Validation
 ```{r}
-k.qda.mod1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
-                    tr,method="qda",family = binomial(),
-                    trControl=ctrl)
-k.pred1 <- predict(k.qda.mod1,newdata = te)
-confusionMatrix(data=k.pred1, te$SOURCE)
+(k.qda.mod1 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,
+                    df,method="qda",family = binomial(),
+                    trControl=ctrl))
 ```
 
 
 ```{r}
-k.qda.mod2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
-                    tr,method="qda",family = binomial(),
-                    trControl=ctrl)
-k.pred2 <- predict(k.qda.mod2,newdata = te)
-confusionMatrix(data=k.pred2, te$SOURCE)
+(k.qda.mod2 <- train(SOURCE ~ HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX,
+                    df,method="qda",family = binomial(),
+                    trControl=ctrl))
 ```
 
 
 ```{r}
-k.qda.mod4 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
-                    tr,method="qda",family = binomial(),
-                    trControl=ctrl)
-k.pred4 <- predict(k.qda.mod4,newdata = te)
-confusionMatrix(data=k.pred4, te$SOURCE)
+(k.qda.mod4 <- train(SOURCE ~ HAEMATOCRIT+LEUCOCYTE+THROMBOCYTE+SEX,
+                    df,method="qda",family = binomial(),
+                    trControl=ctrl))
 ```
 
 ```{r}
-k.qda.mod5 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
-                    tr,method="qda",family = binomial(),
-                    trControl=ctrl)
-k.pred5 <- predict(k.qda.mod5,newdata = te)
-confusionMatrix(data=k.pred5, te$SOURCE)
+(k.qda.mod5 <- train(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+SEX,
+                    df,method="qda",family = binomial(),
+                    trControl=ctrl))
 ```
 
-```{r}
-valuesQDA <- c(0.7304,0.4059,0.5153,0.8703,
-               0.716,0.366,0.4617,0.8815,
-               0.71,0.3507,0.4464,0.8815,
-               0.7153,0.3632,0.4559,0.884)
-QDAoverview <- matrix(valuesQDA,nrow=4, ncol=4, byrow=TRUE)
-colnames(QDAoverview) <- c('Accuracy (test)', 'Kappa', 'Sensitivity','Specificity')
-rownames(QDAoverview) <- c('Model1', 'Model2','Model4', 'Model5')
-view(QDAoverview)
-print(QDAoverview)
-```
 We noticed a marginal enhancement in values when employing QDA
-the highest accuracy rose to 0.7304 in Model 1, which includes eight predictors. 
-Like LDA and Logistic regression, the sensitivity and specificity values among the models are closely aligned 
-and don't exhibit significant deviations from those observed in LDA and Logistic regression.
-We will still choose Model2  containing the four predictors and not Model1
-We're willing to trade off a 0.02 increase in accuracy for a significant gain in interpretability.
+the highest accuracy rose to  0.7259314 in Model 1, which includes eight predictors. 
 
+We will still choose Model2  containing the four predictors and not Model1
+We're willing to trade off a little increase in accuracy for a significant gain in interpretability.
 
 
 We perform LDA and QDA using the validation set approach to compare the results with those obtained through cross-validation.
 
 LDA  validation-set approach
+
 ```{r}
 lda.mod1 <- lda(SOURCE ~ ERYTHROCYTE+LEUCOCYTE+THROMBOCYTE+MCH+MCHC+MCV+AGE+SEX,data=tr)
 lda.pred1 <- predict(lda.mod1, newdata=te)
@@ -727,12 +639,6 @@ qda.pred5 <- predict(qda.mod5, newdata=te)
 confusionMatrix(data=qda.pred5$class, te$SOURCE)
 ```
 
-We're seeing identical outcomes in both cross-validation and the validation set, 
-potentially because the number of observation is relatively large compared to the number of predictors, which could be a contributing factor to this consistency.
-
-We split the data differently, and repeated the LDA and QDA processes, generating testing errors using both the validation set approach and cross-validation
-and we didn't specify any seed. Each time,we consistently obtained identical results.
-
 
 The aim of this roc-curve is to see which metod LAD or QDA performed better on our chosen model (Model2)
 
@@ -759,32 +665,9 @@ From the roc curves we concluded that QDA performs better than LDA on Model2, bu
 Hence we do this following graph
 
 ```{r}
-values <- c(0.7145, 0.71, 0.7304, 0.7115, 0.7122, 0.716, 0.7062, 0.7024, 0.71, 0.713, 0.7047, 0.7153)
+values <- c(0.7204, 0.7160, 0.7260, 0.7214, 0.7146, 0.7168, 0.7167, 0.7133, 0.7165, 0.7222, 0.7162, 0.7222)
 models <- matrix(values, nrow = 4, ncol = 3, byrow = TRUE)
 colnames(models) <- c( 'GLM', 'LDA','QDA')
 rownames(models) <- c('ERY,LEU,THR,MCH,MCHC,MCV,AGE,SEX', 'HAEMO,LEU,THR,SEX','HAEMA,LEU,THR,SEX', 'ERY,LEU,THR,MCH,SEX')
+models
 ```
-
-```{r}
-lda_error <- mean(lda.pred2$class != te$SOURCE)
-qda_error <- mean(qda.pred2$class != te$SOURCE)
-glm_error <- mean(pred2 != te$SOURCE)
-
-```
-```{r}
-error_data <- data.frame(
-  Method = c("LDA", "QDA", "GLM"),
-  Error = c(lda_error, qda_error, glm_error)
-)
-```
-
-```{r}
-boxplot(Error ~ Method, data = error_data, main = "Test Error Rates", ylab = "Error Rate")
-```
-
-Our findings indicate that QDA exhibits the lowest test error rate at 0.284, 
-while LDA and Logistic Regression demonstrate error rates of 0.2875 and 0.2885, respectively. 
-The difference in error rate is so minimal that the use of a simpler linear method is also possible in our case.
-
-
-A notable observation is that none of the pairs of predictors in Model2 ("HAEMOGLOBINS+LEUCOCYTE+THROMBOCYTE+SEX") match the pairs we previously identified as correlated.
