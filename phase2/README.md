@@ -71,8 +71,11 @@ Model performance will be evaluated using k-fold cross-validation to ensure robu
 ## 📈 Classification Techniques and 🔁 Resampling Techniques
 Across the :three: classification techniques, the model including `HAEMOGLOBINS`, `LEUCOCYTE`, `THROMBOCYTE`, and `SEX` appears to be the best fit for our data.
 
-Additionally, Quadratic Discriminant Analysis (QDA) appears to be the best fit for our data when using these four features.
-![Alt text](../figures/error.png)
+Additionally, Logistic Regression appears to be the best fit for our data when using these four features, noting that these 3️⃣ techniques had similar performances
+![image](https://github.com/user-attachments/assets/19fa7cd5-1c6e-4400-b77d-713a5fee83e4)
+
+
+
 
 
 ---
